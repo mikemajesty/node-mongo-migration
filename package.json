@@ -1,6 +1,6 @@
 {
   "name": "@mikemajesty/mongo-migration",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "MongoDB migrations.",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -46,8 +46,8 @@
     "inquirer": "^14.0.2",
     "nest-commander": "^3.20.1"
   },
-   "peerDependencies": {
-      "mongodb": ">=6.0.0"
+  "peerDependencies": {
+    "mongodb": ">=6.0.0"
   },
   "devDependencies": {
     "@jest/globals": "^30.2.0",
