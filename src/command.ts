@@ -97,8 +97,41 @@ export class MigrationCreateCommand extends CommandRunner {
   async run(passedParams: string[], options?: MigrationCreateOptions): Promise<void> {
     const migrationsDir = this.runner.config.migrationsPath;
 
-    const name = await this.getName(options, passedParams)
+    const name = await this.getName(options, passedParams);
+    this.validateName(name);
 
+    if (!existsSync(migrationsDir)) {
+      throw new Error(
+        `${MigrationCreateCommand.name}: ${red(`Migrations directory does not exist: ${migrationsDir}`)}`
+      );
+    }
+
+    const version = this.getNextVersion();
+    const versionPadded = this.padNumber(version);
+    const className = this.toPascalCase(name) + versionPadded;
+    const fileName = `${versionPadded}_${this.toSnakeCase(name)}.ts`;
+    const filePath = join(migrationsDir, fileName);
+
+    if (existsSync(filePath)) {
+      console.error(red(`❌ Migration ${fileName} already exists`));
+      process.exit(1);
+    }
+
+    const content = this.generateTemplate(className, versionPadded);
+    writeFileSync(filePath, content);
+
+    console.log(green(`✅ Migration created: ${bold(fileName)}`));
+    console.log(`📁 Path: ${filePath}`);
+    console.log(`📊 Next available number: ${this.padNumber(version + 1)}`);
+  }
+
+
+  private async getName(options: MigrationCreateOptions | undefined, passedParams: string[]): Promise<string> {
+    const name = options?.name || passedParams[0];
+    return name || (await this.askMigrationName());
+  }
+
+  private validateName(name: string): void {
     if (!name || name.trim() === '') {
       console.error(red('❌ Migration name is required'));
       process.exit(1);
@@ -108,45 +141,6 @@ export class MigrationCreateCommand extends CommandRunner {
       console.error(red('❌ Name must start with a letter and contain only letters and numbers'));
       process.exit(1);
     }
-
-    if (!existsSync(migrationsDir)) {
-      throw new Error(`${MigrationCreateCommand.name}: ${red(`Migrations directory does not exist: ${migrationsDir}`)}`);
-    }
-
-    const nextNumber = this.getNextMigrationNumber();
-    const fileName = `${this.padNumber(nextNumber)}_${this.toSnakeCase(name)}.ts`;
-    const filePath = join(migrationsDir, fileName);
-
-    if (existsSync(filePath)) {
-      console.error(red(`❌ Migration ${fileName} already exists`));
-      process.exit(1);
-    }
-
-    const className = this.toPascalCase(name) + this.padNumber(nextNumber);
-    const content = this.generateTemplate(className);
-
-    writeFileSync(filePath, content);
-    
-    console.log(green(`✅ Migration created: ${bold(fileName)}`));
-    console.log(`📁 Path: ${filePath}`);
-    console.log(`📊 Next available number: ${this.padNumber(nextNumber + 1)}`);
-  }
-
-  private async getName(options: MigrationCreateOptions | undefined, passedParams: string[]) {
-    const parameterName = options?.name || passedParams[0]
-
-    if (parameterName) {
-      return parameterName
-    }
-    return await this.askMigrationName()
-  }
-
-  @Option({
-    flags: '-n, --name <name>',
-    description: 'Migration name (e.g., AddUserIndex)',
-  })
-  parseName(val: string): string {
-    return val;
   }
 
   private async askMigrationName(): Promise<string> {
@@ -156,9 +150,7 @@ export class MigrationCreateCommand extends CommandRunner {
         name: 'name',
         message: 'Migration name:',
         validate: (input) => {
-          if (!input || input.trim() === '') {
-            return 'Name is required';
-          }
+          if (!input || input.trim() === '') return 'Name is required';
           if (!/^[A-Za-z][A-Za-z0-9]*$/.test(input)) {
             return 'Name must start with a letter and contain only letters and numbers';
           }
@@ -169,8 +161,8 @@ export class MigrationCreateCommand extends CommandRunner {
     return answer.name;
   }
 
-  private getNextMigrationNumber(): number {
-    const numbers = this.runner.config.migrations.map(m => {
+  private getNextVersion(): number {
+    const numbers = this.runner.config.migrations.map((m) => {
       const num = parseInt(m.version.replace(/\D/g, ''), 10);
       return isNaN(num) ? 0 : num;
     });
@@ -194,13 +186,14 @@ export class MigrationCreateCommand extends CommandRunner {
     return str.charAt(0).toUpperCase() + str.slice(1);
   }
 
-  private generateTemplate(className: string): string {
+
+  private generateTemplate(className: string, version: string): string {
     return `import { IMongoMigration } from './interface';
 import { Db } from 'mongodb';
 
 export class ${className} implements IMongoMigration {
   get version(): string {
-    return '${className}';
+    return '${version}';
   }
 
   async up(db: Db): Promise<void> {
@@ -211,6 +204,16 @@ export class ${className} implements IMongoMigration {
     // TODO: Implement down migration
   }
 }`;
+  }
+
+  // ─── Opções CLI ─────────────────────────────────────────
+
+  @Option({
+    flags: '-n, --name <name>',
+    description: 'Migration name (e.g., AddUserIndex)',
+  })
+  parseName(val: string): string {
+    return val;
   }
 }
 
