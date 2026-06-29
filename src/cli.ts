@@ -7,6 +7,7 @@ export type MongoMigrationInput = {
   dbName: string;
   changelogCollection: string;
   migrations: IMongoMigration[];
+  migrationsPath: string;
   logLevels: ("verbose" | "debug" | "log" | "warn" | "error" | "fatal")[];
 };
 
@@ -18,6 +19,7 @@ export const runMongoMigrationCLI = async (module: MongoMigrationInput) =>
       dbName: module.dbName,
       changelogCollection: module.changelogCollection,
       migrations: module.migrations,
+      migrationsPath: module.migrationsPath
     }),
     module.logLevels ?? ['log', 'warn', 'error'],
   );

@@ -102,5 +102,6 @@ export type MongoMigrationRunnerConfig = {
   uri: string
   dbName: string
   changelogCollection: string
-  migrations: IMongoMigration[]
+  migrations: IMongoMigration[],
+  migrationsPath: string
 }

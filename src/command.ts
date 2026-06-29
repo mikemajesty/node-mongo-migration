@@ -1,7 +1,9 @@
 import { bold, green, red } from 'colorette'
 import inquirer from 'inquirer'
-import { Command, CommandRunner } from 'nest-commander'
+import { Command, CommandRunner, Option } from 'nest-commander'
 import { MongoMigrationRunner } from './runner'
+import { join } from 'path'
+import { existsSync, mkdirSync, writeFileSync } from 'fs'
 
 @Command({ name: 'migration:run', options: { isDefault: true } })
 export class MigrationRunCommand extends CommandRunner {
@@ -84,4 +86,134 @@ export class MigrationStatusCommand extends CommandRunner {
     const status = await this.runner.getStatus()
     console.table(status, ['version', 'name', 'applied'])
   }
+}
+
+@Command({ name: 'migration:create' })
+export class MigrationCreateCommand extends CommandRunner {
+  constructor(private runner: MongoMigrationRunner) {
+    super();
+  }
+
+  async run(passedParams: string[], options?: MigrationCreateOptions): Promise<void> {
+    const migrationsDir = this.runner.config.migrationsPath;
+
+    const name = await this.getName(options, passedParams)
+
+    if (!name || name.trim() === '') {
+      console.error(red('❌ Migration name is required'));
+      process.exit(1);
+    }
+
+    if (!/^[A-Za-z][A-Za-z0-9]*$/.test(name)) {
+      console.error(red('❌ Name must start with a letter and contain only letters and numbers'));
+      process.exit(1);
+    }
+
+    if (!existsSync(migrationsDir)) {
+      throw new Error(`${MigrationCreateCommand.name}: ${red(`Migrations directory does not exist: ${migrationsDir}`)}`);
+    }
+
+    const nextNumber = this.getNextMigrationNumber();
+    const fileName = `${this.padNumber(nextNumber)}_${this.toSnakeCase(name)}.ts`;
+    const filePath = join(migrationsDir, fileName);
+
+    if (existsSync(filePath)) {
+      console.error(red(`❌ Migration ${fileName} already exists`));
+      process.exit(1);
+    }
+
+    const className = this.toPascalCase(name) + this.padNumber(nextNumber);
+    const content = this.generateTemplate(className);
+
+    writeFileSync(filePath, content);
+    
+    console.log(green(`✅ Migration created: ${bold(fileName)}`));
+    console.log(`📁 Path: ${filePath}`);
+    console.log(`📊 Next available number: ${this.padNumber(nextNumber + 1)}`);
+  }
+
+  private async getName(options: MigrationCreateOptions | undefined, passedParams: string[]) {
+    const parameterName = options?.name || passedParams[0]
+
+    if (parameterName) {
+      return parameterName
+    }
+    return await this.askMigrationName()
+  }
+
+  @Option({
+    flags: '-n, --name <name>',
+    description: 'Migration name (e.g., AddUserIndex)',
+  })
+  parseName(val: string): string {
+    return val;
+  }
+
+  private async askMigrationName(): Promise<string> {
+    const answer = await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'name',
+        message: 'Migration name:',
+        validate: (input) => {
+          if (!input || input.trim() === '') {
+            return 'Name is required';
+          }
+          if (!/^[A-Za-z][A-Za-z0-9]*$/.test(input)) {
+            return 'Name must start with a letter and contain only letters and numbers';
+          }
+          return true;
+        }
+      }
+    ]);
+    return answer.name;
+  }
+
+  private getNextMigrationNumber(): number {
+    const numbers = this.runner.config.migrations.map(m => {
+      const num = parseInt(m.version.replace(/\D/g, ''), 10);
+      return isNaN(num) ? 0 : num;
+    });
+
+    const maxNumber = numbers.length > 0 ? Math.max(...numbers) : 0;
+    return maxNumber + 1;
+  }
+
+  private padNumber(num: number): string {
+    return String(num).padStart(4, '0');
+  }
+
+  private toSnakeCase(str: string): string {
+    return str
+      .replace(/([a-z])([A-Z])/g, '$1_$2')
+      .replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2')
+      .toLowerCase();
+  }
+
+  private toPascalCase(str: string): string {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  }
+
+  private generateTemplate(className: string): string {
+    return `import { IMongoMigration } from './interface';
+import { Db } from 'mongodb';
+
+export class ${className} implements IMongoMigration {
+  get version(): string {
+    return '${className}';
+  }
+
+  async up(db: Db): Promise<void> {
+    // TODO: Implement up migration
+  }
+
+  async down(db: Db): Promise<void> {
+    // TODO: Implement down migration
+  }
+}`;
+  }
+}
+
+export type MigrationCreateOptions = {
+  name?: string;
 }
