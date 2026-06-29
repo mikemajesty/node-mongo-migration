@@ -138,7 +138,7 @@ export class MigrationCreateCommand extends CommandRunner {
     console.log(green(`✅ Migration created: ${bold(fileName)}`));
     console.log(`📁 Path: ${filePath}`);
     console.log(`📊 Next available number: ${this.padNumber(version + 1)}`);
-    console.log(green(`\n💡 Example: npm run migration-mongo:create -- --name=AddNewFeature`));
+    console.log(green(`\n💡 npm run migration-mongo:run -- --name=${name}`));
   }
 
   private async getName(options: MigrationCreateOptions | undefined, passedParams: string[]): Promise<string> {
@@ -151,7 +151,7 @@ export class MigrationCreateCommand extends CommandRunner {
       {
         type: 'input',
         name: 'name',
-        message: 'Migration name:',
+        message: `Migration name (e.g., AddUserIndex):`,
         validate: (input) => {
           if (!input || input.trim() === '') return 'Name is required';
           if (!/^[A-Za-z][A-Za-z0-9]*$/.test(input)) {
@@ -180,8 +180,8 @@ export class MigrationCreateCommand extends CommandRunner {
 
   private toSnakeCase(str: string): string {
     return str
-      .replace(/([a-z])([A-Z])/g, '$1_$2')
-      .replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2')
+      .replace(/([a-z])([A-Z])/g, '$1-$2')
+      .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
       .toLowerCase();
   }
 
