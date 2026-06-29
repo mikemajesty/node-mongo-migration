@@ -123,7 +123,7 @@ export class MigrationCreateCommand extends CommandRunner {
 
     const version = this.getNextVersion();
     const versionPadded = this.padNumber(version);
-    const className = this.toPascalCase(name) + versionPadded;
+    const className = this.toPascalCase(name);
     const fileName = `${versionPadded}_${this.toSnakeCase(name)}.ts`;
     const filePath = join(migrationsDir, fileName);
 
@@ -138,7 +138,23 @@ export class MigrationCreateCommand extends CommandRunner {
     console.log(green(`✅ Migration created: ${bold(fileName)}`));
     console.log(`📁 Path: ${filePath}`);
     console.log(`📊 Next available number: ${this.padNumber(version + 1)}`);
-    console.log(green(`\n💡 npm run migration-mongo:run -- --name=${name}`));
+    console.log(green(`\n💡 import { ${className} } from './${fileName.replace('.ts', '')}'
+
+runMongoMigrationCLI({
+  uri: process.env.MONGO_URL as string,
+  dbName: process.env.MONGO_DATABASE as string,
+  changelogCollection: 'changelog',
+  migrations: [
+    // ... other migrations
+    new ${className}() ${bold(`Add this line`)}
+  ],
+  logLevels: ['warn', 'error'],
+  migrationsPath: path.resolve(__dirname)
+})
+`));
+  console.log(green(`\n✨ Don't forget to run the migration:`));
+  console.log(`  npm run migration-mongo:run`);
+
   }
 
   private async getName(options: MigrationCreateOptions | undefined, passedParams: string[]): Promise<string> {
