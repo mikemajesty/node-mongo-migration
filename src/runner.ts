@@ -20,7 +20,8 @@ export class MongoMigrationRunner implements IMongoMigrationRunner {
       return this.config.migrations.map((m) => ({
         version: m.version,
         name: m.constructor.name,
-        applied: appliedVersions.includes(m.version)
+        applied: appliedVersions.includes(m.version),
+        appliedAt: appliedMigrations.find((applied) => applied.version === m.version)?.appliedAt || null
       }))
     } finally {
       await this.close()

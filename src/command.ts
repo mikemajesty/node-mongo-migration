@@ -3,7 +3,7 @@ import inquirer from 'inquirer'
 import { Command, CommandRunner, Option } from 'nest-commander'
 import { MongoMigrationRunner } from './runner'
 import { join } from 'path'
-import { existsSync, mkdirSync, writeFileSync } from 'fs'
+import { existsSync, writeFileSync } from 'fs'
 
 @Command({ name: 'migration:run', options: { isDefault: true } })
 export class MigrationRunCommand extends CommandRunner {
@@ -84,7 +84,22 @@ export class MigrationStatusCommand extends CommandRunner {
 
   async run() {
     const status = await this.runner.getStatus()
-    console.table(status, ['version', 'name', 'applied'])
+    console.table(status, ['version', 'name', 'applied', 'appliedAt'])
+  }
+}
+
+const MIGRATION_NAME_REGEX = /^[A-Za-z][A-Za-z0-9]*$/;
+
+function validateName(name: string, context: string): void {
+  if (!name || name.trim() === '') {
+    console.error(red(`❌ [${context}] Migration name is required`));
+    process.exit(1);
+  }
+
+  if (!MIGRATION_NAME_REGEX.test(name)) {
+    console.error(red(`❌ [${context}] Name must start with a letter and contain only letters and numbers`));
+    console.error(red(`   Example: "AddUserIndex", "CreateRole", "UpdateCatTable"`));
+    process.exit(1);
   }
 }
 
@@ -98,7 +113,7 @@ export class MigrationCreateCommand extends CommandRunner {
     const migrationsDir = this.runner.config.migrationsPath;
 
     const name = await this.getName(options, passedParams);
-    this.validateName(name);
+    validateName(name, MigrationCreateCommand.name);
 
     if (!existsSync(migrationsDir)) {
       throw new Error(
@@ -123,24 +138,12 @@ export class MigrationCreateCommand extends CommandRunner {
     console.log(green(`✅ Migration created: ${bold(fileName)}`));
     console.log(`📁 Path: ${filePath}`);
     console.log(`📊 Next available number: ${this.padNumber(version + 1)}`);
+    console.log(green(`\n💡 Example: npm run migration-mongo:create -- --name=AddNewFeature`));
   }
-
 
   private async getName(options: MigrationCreateOptions | undefined, passedParams: string[]): Promise<string> {
     const name = options?.name || passedParams[0];
     return name || (await this.askMigrationName());
-  }
-
-  private validateName(name: string): void {
-    if (!name || name.trim() === '') {
-      console.error(red('❌ Migration name is required'));
-      process.exit(1);
-    }
-
-    if (!/^[A-Za-z][A-Za-z0-9]*$/.test(name)) {
-      console.error(red('❌ Name must start with a letter and contain only letters and numbers'));
-      process.exit(1);
-    }
   }
 
   private async askMigrationName(): Promise<string> {
@@ -186,9 +189,8 @@ export class MigrationCreateCommand extends CommandRunner {
     return str.charAt(0).toUpperCase() + str.slice(1);
   }
 
-
   private generateTemplate(className: string, version: string): string {
-    return `import { IMongoMigration } from './interface';
+    return `import { IMongoMigration } from '@mikemajesty/mongo-migration';
 import { Db } from 'mongodb';
 
 export class ${className} implements IMongoMigration {
@@ -206,8 +208,6 @@ export class ${className} implements IMongoMigration {
 }`;
   }
 
-  // ─── Opções CLI ─────────────────────────────────────────
-
   @Option({
     flags: '-n, --name <name>',
     description: 'Migration name (e.g., AddUserIndex)',
@@ -216,6 +216,7 @@ export class ${className} implements IMongoMigration {
     return val;
   }
 }
+
 
 export type MigrationCreateOptions = {
   name?: string;
