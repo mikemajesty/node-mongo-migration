@@ -1,5 +1,5 @@
 import { DynamicModule, Module } from '@nestjs/common'
-import { MigrationRollbackCommand, MigrationRunCommand, MigrationStatusCommand } from './command'
+import { MigrationCreateCommand, MigrationRollbackCommand, MigrationRunCommand, MigrationStatusCommand } from './command'
 import { MongoMigrationRunner, MongoMigrationRunnerConfig } from './runner'
 
 @Module({})
@@ -19,7 +19,8 @@ export class MongoMigrationModule {
         },
         MigrationRunCommand,
         MigrationRollbackCommand,
-        MigrationStatusCommand
+        MigrationStatusCommand,
+        MigrationCreateCommand
       ],
       exports: [MongoMigrationRunner]
     }
