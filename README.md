@@ -50,6 +50,8 @@ runMongoMigrationCLI({
 
 If you place the CLI file somewhere else, keep the same idea: import the migrations from their real location and set `migrationsPath` to the directory where new migration files should be created.
 
+In this example, `migrationsPath: path.resolve(__dirname)` works because `cli.ts` is in the same folder as the migration files. If your CLI file is in another folder, `migrationsPath` must point to the folder where the migration files are located.
+
 ## Create a Migration
 
 Each migration must implement `IMongoMigration`.
