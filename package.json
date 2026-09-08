@@ -41,7 +41,7 @@
   "author": "Mike Lima",
   "license": "MIT",
   "dependencies": {
-    "@nestjs/common": "^11.1.27",
+    "@nestjs/common": "latest",
     "colorette": "^2.0.20",
     "fs": "^0.0.1-security",
     "inquirer": "^14.0.2",
