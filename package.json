@@ -6,7 +6,8 @@
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "overrides": {
-    "@nestjs/core": "12.0.0"
+    "@nestjs/core": "12.0.0",
+    "js-yaml": "latest"
   },
   "scripts": {
     "build": "tsc",
@@ -47,7 +48,7 @@
     "@nestjs/common": "latest",
     "colorette": "^2.0.20",
     "fs": "^0.0.1-security",
-    "inquirer": "^14.0.2",
+    "inquirer": "^14.2.3",
     "nest-commander": "^3.21.0",
     "path": "^0.12.7"
   },
@@ -55,12 +56,12 @@
     "mongodb": ">=7.0.0"
   },
   "devDependencies": {
-    "@jest/globals": "^30.2.0",
+    "@jest/globals": "^30.5.2",
     "@types/jest": "^30.0.0",
-    "@types/node": "^24.13.2",
-    "jest": "^30.2.0",
-    "mongodb": "^7.4.0",
-    "ts-jest": "^29.4.6",
+    "@types/node": "^26.6.4",
+    "jest": "^30.5.2",
+    "mongodb": "^7.7.0",
+    "ts-jest": "^29.4.14",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   },
