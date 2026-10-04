@@ -72,10 +72,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mikemajesty/mongo-migration.git"
+    "url": "git+https://github.com/mikemajesty/node-mongo-migration"
   },
   "bugs": {
-    "url": "https://github.com/mikemajesty/mongo-migration/issues"
+    "url": "https://github.com/mikemajesty/node-mongo-migrationn/issues"
   },
-  "homepage": "https://github.com/mikemajesty/mongo-migration#readme"
+  "homepage": "https://github.com/mikemajesty/node-mongo-migration#readme"
 }
